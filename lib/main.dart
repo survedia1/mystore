@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart'; // تأكد من وجود هذا الملف لديك
+import 'screens/home_screen.dart';
 
 void main() {
-  // تأكد من تهيئة Flutter (مطلوب دائماً)
   WidgetsFlutterBinding.ensureInitialized();
-
-  // تشغيل التطبيق
   runApp(const MyApp());
 }
 
@@ -16,12 +13,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My App Store',
+      debugShowCheckedModeBanner: false,
+      // دعم اللغة العربية
+      builder: (context, child) {
+        return Directionality(textDirection: TextDirection.rtl, child: child!);
+      },
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        fontFamily: 'Roboto', // يمكنك تحديد خط إذا أردت
+        scaffoldBackgroundColor: Colors.white,
       ),
-      debugShowCheckedModeBanner: false,
-      home: const HomePage(), // هذا الملف يحتوي على الواجهة الرئيسية
+      home: const HomeScreen(),
     );
   }
 }
