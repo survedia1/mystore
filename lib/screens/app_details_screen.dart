@@ -140,13 +140,6 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(
-                          widget.app.developerName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.teal[700],
-                          ),
-                        ),
                       ],
                     ),
                   ),
