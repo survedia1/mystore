@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:device_apps/device_apps.dart'; // للتحقق والفتح
-import 'package:permission_handler/permission_handler.dart'; // للأذونات
+import 'package:device_apps/device_apps.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/app_model.dart';
 import '../services/download_service.dart';
 
@@ -15,34 +15,77 @@ class AppDetailsScreen extends StatefulWidget {
 class _AppDetailsScreenState extends State<AppDetailsScreen> {
   final DownloadService _downloadService = DownloadService();
 
-  // حالات الواجهة
   bool _isInstalled = false;
+  bool _isUpdateAvailable = false; // متغير جديد لحالة التحديث
   bool _isDownloading = false;
   double _progress = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _checkIfInstalled();
+    _checkAppStatus(); // غيّرنا اسم الدالة لتشمل الفحصين
   }
 
-  /// التحقق مما إذا كان التطبيق مثبتاً بالفعل
-  Future<void> _checkIfInstalled() async {
-    bool installed = await DeviceApps.isAppInstalled(widget.app.packageName);
+  /// التحقق من التثبيت + التحقق من التحديث
+  Future<void> _checkAppStatus() async {
+    // جلب معلومات التطبيق المثبت (شاملة الإصدار)
+    bool isInstalled = await DeviceApps.isAppInstalled(widget.app.packageName);
+
+    bool updateAvailable = false;
+
+    if (isInstalled) {
+      // إذا مثبت، نجلب بياناته لنعرف إصداره
+      Application? app = await DeviceApps.getApp(widget.app.packageName, true);
+
+      if (app != null) {
+        // مقارنة الإصدارات: (إصدار السيرفر) vs (الإصدار المثبت)
+        // widget.app.version قادمة من لوحة التحكم (السيرفر)
+        // app.versionName قادمة من الهاتف
+        updateAvailable = _isServerVersionNewer(
+          widget.app.version,
+          app.versionName ?? "0.0.0",
+        );
+      }
+    }
+
     if (mounted) {
       setState(() {
-        _isInstalled = installed;
+        _isInstalled = isInstalled;
+        _isUpdateAvailable = updateAvailable;
       });
     }
   }
 
-  /// زر الإجراء الرئيسي (تثبيت أو فتح)
+  // دالة مساعدة لمقارنة الإصدارات (مثلاً 1.0.2 أكبر من 1.0.1)
+  bool _isServerVersionNewer(String serverVersion, String installedVersion) {
+    try {
+      List<int> serverParts = serverVersion.split('.').map(int.parse).toList();
+      List<int> installedParts = installedVersion
+          .split('.')
+          .map(int.parse)
+          .toList();
+
+      for (int i = 0; i < serverParts.length; i++) {
+        // إذا وصلنا لنهاية أجزاء المثبت (مثلاً السيرفر 1.0.1 والمثبت 1.0)
+        if (i >= installedParts.length) return true;
+
+        if (serverParts[i] > installedParts[i]) return true;
+        if (serverParts[i] < installedParts[i]) return false;
+      }
+      // إذا كانوا متساويين، فلا يوجد تحديث
+      return false;
+    } catch (e) {
+      // في حالة وجود خطأ في صيغة النص، نعتبر أنه لا يوجد تحديث لتجنب المشاكل
+      return false;
+    }
+  }
+
   Future<void> _handleMainButton() async {
-    if (_isInstalled) {
-      // 1. إذا مثبت: قم بفتحه
+    if (_isInstalled && !_isUpdateAvailable) {
+      // 1. مثبت ومحدث -> فتح
       DeviceApps.openApp(widget.app.packageName);
     } else {
-      // 2. إذا غير مثبت: ابدأ عملية التحميل والتثبيت
+      // 2. غير مثبت OR (مثبت + يوجد تحديث) -> تحميل وتثبيت
       await _startDownloadAndInstall();
     }
   }
@@ -181,8 +224,9 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                     onPressed: _handleMainButton,
                     style: ElevatedButton.styleFrom(
                       // لون أخضر للتثبيت، ولون أزرق للفتح
-                      backgroundColor: _isInstalled
-                          ? Colors.blue
+                      backgroundColor: (_isInstalled && !_isUpdateAvailable)
+                          ? Colors
+                                .blue // فتح
                           : const Color(0xFF01875F),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -190,7 +234,9 @@ class _AppDetailsScreenState extends State<AppDetailsScreen> {
                       ),
                     ),
                     child: Text(
-                      _isInstalled ? 'فتح' : 'تثبيت',
+                      _isInstalled
+                          ? (_isUpdateAvailable ? 'تحديث' : 'فتح')
+                          : 'تثبيت',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

@@ -13,11 +13,10 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       body: SafeArea(
-        // لاحظ هنا: قمنا بتحديد النوع <List<AppModel>> لإصلاح خطأ InvalidType
-        child: StreamBuilder<List<AppModel>>(
-          stream: dataService.getAllApps(), // تم إزالة أي كود إضافي هنا
+        child: FutureBuilder<List<AppModel>>(
+          // تغيير هنا
+          future: dataService.getAllApps(), // الدالة الجديدة
           builder: (context, snapshot) {
-            // 1. حالة الانتظار
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }

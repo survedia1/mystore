@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AppModel {
   String? id; // معرف المستند في فايربيس
   final String name;
@@ -40,38 +38,23 @@ class AppModel {
     };
   }
 
-  // قراءة البيانات من فايربيس
-  factory AppModel.fromMap(Map<String, dynamic> map, String docId) {
+  factory AppModel.fromJson(Map<String, dynamic> json) {
     return AppModel(
-      id: docId,
-      name: map['name'] ?? '',
-      developerName: map['developerName'] ?? '',
-      iconUrl: map['iconUrl'] ?? '',
-      downloadUrl: map['downloadUrl'] ?? '',
-      packageName: map['packageName'] ?? '',
-      version: map['version'] ?? '',
-      size: map['size'] ?? '',
-      description: map['description'] ?? '',
-      rating: (map['rating'] ?? 0.0).toDouble(),
-    );
-  }
-
-  // دالة المصنع (Factory) لقراءة البيانات من مستند Firestore
-  factory AppModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
-    return AppModel(
-      id: doc.id, // معرف المستند هو ID التطبيق
-      name: data['name'] ?? 'لا يوجد اسم',
-      developerName: data['developerName'] ?? 'غير معروف',
-      iconUrl: data['iconUrl'] ?? '',
-      downloadUrl: data['downloadUrl'] ?? '',
-      packageName: data['packageName'] ?? '',
-      version: data['version'] ?? '1.0',
-      size: data['size'] ?? '0 MB',
-      description: data['description'] ?? 'لا يوجد وصف',
-      rating: (data['rating'] is num
-          ? (data['rating'] as num).toDouble()
-          : double.tryParse(data['rating'].toString()) ?? 0.0),
+      // تحويل ID إلى String لأن SQL يرجعه رقم
+      id: json['id'].toString(),
+      name: json['name'] ?? '',
+      // لاحظ تغيير الأسماء لتطابق قاعدة البيانات (developer_name)
+      developerName: json['developer_name'] ?? '',
+      iconUrl: json['icon_url'] ?? '',
+      downloadUrl: json['download_url'] ?? '',
+      packageName: json['package_name'] ?? '',
+      version: json['version'] ?? '',
+      size: json['size'] ?? '',
+      description: json['description'] ?? '',
+      // التحويل الآمن للأرقام
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : double.tryParse(json['rating'].toString()) ?? 0.0,
     );
   }
 }

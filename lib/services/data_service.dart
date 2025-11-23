@@ -1,20 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/app_model.dart';
 
 class DataService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // رابط السيرفر الذي أنشأته في الخطوة 2
+  final String baseUrl = "http://192.168.1.109:3000";
 
-  // هذه الدالة ترجع تياراً (Stream) من قائمة التطبيقات
-  // أي تحديث يتم في لوحة التحكم يظهر فوراً في التطبيق
-  Stream<List<AppModel>> getAllApps() {
-    return _firestore
-        .collection('apps') // اسم الـ Collection الذي تستخدمه في لوحة التحكم
-        .snapshots() // جلب اللقطات الحية
-        .map((snapshot) {
-          // تحويل كل مستند إلى كائن AppModel
-          return snapshot.docs
-              .map((doc) => AppModel.fromFirestore(doc))
-              .toList();
-        });
+  // تغيير النوع من Stream إلى Future
+  Future<List<AppModel>> getAllApps() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/apps'));
+
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((dynamic item) => AppModel.fromJson(item)).toList();
+      } else {
+        throw Exception('فشل تحميل البيانات');
+      }
+    } catch (e) {
+      throw Exception('خطأ في الاتصال: $e');
+    }
   }
 }
